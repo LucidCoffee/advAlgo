@@ -1,0 +1,423 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{article}
+
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% inclure des images
+\usepackage[pdftex]{graphicx}
+
+%math
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+
+%theorems
+\usepackage{amsthm}
+\newtheorem{defi}{Definition}
+\newtheorem{thm}{Theorem}
+\newtheorem{prop}{Proposition}
+
+%pseudocode
+\usepackage[noEnd=true]{algpseudocodex}
+\usepackage{algorithm}
+\tikzset{algpxIndentLine/.style={draw=gray,very thin,dashed}}
+
+% refs
+\usepackage{hyperref}
+
+
+% problem description 
+\makeatletter
+\newcounter{problemcount}
+\setcounter{problemcount}{0} 
+\newenvironment{problem}[3]
+    {
+    \refstepcounter{problemcount}
+    \begin{center}
+        Problem \theproblemcount : \textsc{#1}\\[1ex]
+    \begin{tabular}{|p{0.1\textwidth} p{0.8\textwidth}|}
+        \hline
+    \textbf{Input:}  & #2\\
+    \textbf{Output:} & #3\\
+    \hline
+    \end{tabular} 
+    \end{center}
+    }
+
+\title{Report advanced algorithmic}
+
+\author{ Travis LEBLANC and Malek BENAMROUCHE }
+
+\begin{document}
+
+
+\maketitle
+
+
+
+
+
+\tableofcontents
+
+\newpage
+
+
+% N'hesitez pas à illustrer votre rapport avec des figures.
+
+\section{Modeling}
+
+The company wants to connect houses to the optical fiber with minimal cost. To do it they want to use pre-existing infrastructure. The question is : knowing the electric map of the city, how can we connect each required house with minimal cost?
+
+To model it, we can first represent the 'electric map' as a non oriented graph, the non-terminal nodes being the intersections, the terminal nodes being the required houses and the weights being the cost of the installation known by the company.\\
+Here is how we can model it:
+\begin{itemize}
+    \item \textbf{Input:} a weighted graph and a set of terminals nodes\\
+    \item \textbf{Solution:} a subtree of this graph which covers each terminal with minimal cost\\
+    \item \textbf{Weight of the solution:} the total weight of the subtree\\
+\end{itemize}
+
+
+\begin{defi}
+    For a graph G(V,E) and a weight function $w:E \to \N$ , we define $w(E) := \sum\limits_{e\in E} w(e)$, we can also write by abuse of notation $w(G) := w(E)$
+\end{defi}
+
+The problem we want to solve is the "Steiner Tree" problem. (see \ref{comp-steiner})
+
+\begin{problem}
+    {Steiner Tree}
+    {G=(V,E) graph, $w:E \to \N$ weight function, $S\subseteq V$}
+    {T=(V',E') a subtree of G such that $S\subseteq V'$ and $w(E)$ is minimal}
+\end{problem}
+
+\begin{problem}
+    {Steiner Tree Decision}
+    {G=(V,E) graph ,  $w:E \to \N$ weight function ,  $S\subseteq V$ ,  $K \in \N$}
+    {If it exists, T=(V',E') a subtree of G such that $S\subseteq V'$ and $w(E) \leq K$}
+\end{problem}
+
+
+This problem is NP-hard, as we will prove it in section \ref{Theoretical Results} by reduction to the Cover Set problem. (see \ref{comp-Cover})
+\begin{problem}
+    {Cover Set}
+    {S a set, $C \subseteq P(S)$}
+    {$C'\subseteq C$ a subset such that $S = \bigcup\limits_{X \in C'} X$ and $|C'|$ is minimal}
+\end{problem}
+
+\begin{problem}
+    {Cover Set Decision}
+    {S a set, $C \subseteq P(S)$, $K\in \N$}
+    {If it exists, C' $\subseteq$ C a subset satifying $S = \bigcup\limits_{X \in C'} X$ and $|C'| \leq K$}
+\end{problem}
+
+\section{Theoretical Results} \label{Theoretical Results}
+\subsection{Complexity}
+
+\begin{thm}
+    \textsc{Steiner Tree decision} is NP-Complete 
+\end{thm}
+\begin{proof}
+    First \textsc{Steiner Tree decision} is in NP because a subtree T can work as a certificate. 
+    We can check in polynomial time if $w(T) \leq K$ by iterating on the edges of T, and summing the weights.
+    
+    We will reduce \textsc{Cover Set Decision} to \textsc{Steiner Tree decision}\\
+    Let $(S,C,K)$ be a instance of Cover Set, with $C \subseteq P(S)$ and $K \in \N$.
+    We construct the graph $G = (V, E)$ : $V=S \cup C \cup \{t_0\}$, and \\ $E = \{(c, x) | c \in C , x \in c\} \cup \{(t_0, c) | c \in C \}$, setting all edge weights to 1.\\
+    \begin{figure}[h!]
+        \centering
+        \includegraphics[width=0.4\linewidth]{images/example-graph.png}
+        \caption{Transformation Example}
+        \label{fig:enter-label}
+    \end{figure}
+    
+    We call \textsc{Steiner Tree Decision} on this graph, with $S'=S\cup \{t0\}$ and $K'=K + |S|$
+    
+    Assuming \textsc{Steiner Tree Decision} returns true, then there is a subtree of this graph $T'=(V',E')$ satifying $w(E') \leq K'$, and so :
+    \begin{align*}
+        w(E') &\leq K'  \\
+        \sum\limits_{e\in E} w(e) &\leq K' \\
+        |E'| &\leq K' && \text{      because all the weights are 1}\\
+        |V'| - 1 &\leq K + |S| && \text{      because T' is a tree}\\
+        |V'| &\leq K + |S| + 1\\
+        |S| + |\{t0\}| + |V'\setminus (S \cup \{t0\})| &\leq K + |S| + 1 && \text{     we break down the nodes in T'}\\
+        |V'\setminus (S \cup \{t0\})| &\leq K
+    \end{align*}
+    
+    The nodes in $C'= V'\setminus (S \cup \{t0\})$ are all in C, and it's a solution to \textsc{Cover Set},
+    because all elements of S are covered (as required by the specification of the Steiner Tree). which means that \textsc{Cover Set Decision} is true for this instance.
+
+    On the other hand, should \textsc{Cover Set Decision} return true, the following Tree would be a solution to {Steiner Tree}: 
+    T = (V', E') with $t0$ as the root, all edges between $t0$ and $c \in C'$, one edge between all elements $x \in S$ and one of the subsets containing $x$ in $C'$ (which exists because $C'$ is a cover set). The weight of this tree is exactly: $w(E') = |C| +|S| \leq K + |S| \leq K'$.
+\end{proof}
+
+\subsection{Approximation}
+Even if the problem is NP-hard, there exist approximations up to a ratio of 1.55 (see \ref{approx}). We will present an easier approximation with a worst-case ratio of 2.
+
+\begin{algorithm}
+\caption{ApproximSteinerTree}
+\begin{algorithmic}
+    \Function{complete}{G=(V,E), S}
+        \State $G' \gets Graph(S, \emptyset)$
+        \For {v $\in$ S}
+            \For {w $\in$ S, w $\neq $ v}
+                \State $G'.addEdge(v,w, ShortestPathLength(G,v,w))$
+            \EndFor
+        \EndFor
+        \State \Return $G'$
+    \EndFunction\\
+    \Function{deploy}{G, T=(V',E')}
+        \State result $\gets \emptyset$
+        \For {$(v,w) \in E'$}
+            \State result$ \gets result \cup ShortestPath(G,v,w)$
+        \EndFor
+        \State \Return result
+    \EndFunction\\
+    \Function{ApproximSteinerTree}{G, S}
+
+    \State $G' \gets$ \Call{complete}{G,S}
+    \State $T \gets$ \Call{MST}{G'}
+    \State \Return \Call{deploy}{G, T}
+
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
+    
+\begin{prop}
+    The previous algorithm \textsc{ApproximSteinerTree} is a 2-approximation
+\end{prop}
+
+\begin{proof}
+    Let $T^*$ be the optimal Steiner Tree, K the complete graph of all terminals with their shortest paths and $A^*$ the approximate solution. We want to prove that $w(A^*) \leq 2w(T^*)$. \\
+    First we can construct a cycle C by duplicating the edges in $T^*$ and get $w(C) = 2w(T^*)$\\
+    
+    Now there is a corresponding cycle C' in K: 
+    constructed by going through the terminals in the same order as in C and adding the edges corresponding to the shortest path between them
+    (without the duplicated edges).
+    
+    We get $w(C') \leq w(C)$ as we take the shortest paths, so in the worst case we take same path as in C.
+    
+    We now get rid of one of the remaining edges to get a tree T' in K such that $w(T') \leq w(C') \leq w(C) \leq 2w(T^*)$ \\
+   
+   Finally, a Minimal Spanning Tree A on K must have a lower weight than T' so :
+    $w(A) \leq w(T') \leq 2w(T^*)$\\
+   
+   The weight of the approximation solution is also the same as the weight of A because we just rebuild the paths back:
+    $w(A^*) = w(A) \leq 2w(T^*)$
+\end{proof}
+
+
+Here is an example where this bound can be approximated as precisely as possible :\\
+
+We start with a complete graph with n nodes, with each edge having weight $2k+1$. Then we add a node $c$ which is linked to all others by edges each of weight $k+1$.
+(not all edges are drawn on G)\\
+\includegraphics[scale=0.5]{images/n-best-worst-example.png}\\
+
+In this case, the complete graph K has all edges of weight $2k+1$, because any path between 2 nodes that passes through $c$ will be of length $2k+2$ or longer.
+Therefore all spanning trees of K have the same total weight: $(n-1)(2k+1)$ (for example the tree $x_1, x_2,...,x_n$ works). However, there exists a solution that only uses edges of $c$, and its total weight is $n(k+1)$.
+
+The ratio of the two is $\frac{n-1}{n}\frac{2k+1}{k+1}$, anc the first fraction can be made as close to 1 as needed by increasing the number of nodes while the second fraction can be made as close to 2 as needed by increasing weights.
+
+To get a ratio greater than $2-\varepsilon$ we can take : $n \geq \frac{4 - \varepsilon}{\varepsilon}$ and $k \geq \frac{2 - \varepsilon}{\varepsilon}$
+\newpage
+\section{Meta-heuristic}
+In tandem with the 2-approximation, we can use a Meta-heuristic which will help in finding the best solution possible faster.
+
+We decided to try implementing the heuristic "Simulated Annealing". This is a general optimization method aiming to make a lot of changes to the solution when the temperature is high, but to stabilize said solution as the temperature falls, all while keeping the best found solution in memory.
+
+Here is a pseudo code of the method:
+
+\begin{algorithm}
+\caption{Simulated Annealing}
+\begin{algorithmic}
+    \Function{SimulatedAnnealing}{Ti, Te, nbiter}
+    \State s $\gets$ randomSol()
+    \State T $\gets$ Ti
+    \For{nbiter}
+        \State s' $\gets$ randNeighbor(s)
+        \If{eval(s') < eval(s)}
+            \State proba $\gets$ 1
+        \Else 
+            \State proba $\gets exp(-\frac{eval(s') - eval(s)}{T})$
+        \EndIf
+        \If{rand() < proba}
+            \State s $\gets$ s'
+        \EndIf 
+        \State T $\gets$ update(T, Ti, Te, nbiter)
+    \EndFor
+    \Return bestSolution
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{How to represent a solution?}\\
+
+We chose to represent it in an array of bits, with each index associated to a node. 
+This way we make sure that at each step, we keep a reasonable solution by putting each terminal to 1.\\
+
+\textbf{How to get a random neighbor?}\\
+
+For the random neighbor, we chose to swap 2 random bits and to do a random mutation which change a random bit from 1 to 0 with a given probability.
+
+\begin{algorithm}
+\begin{algorithmic}
+    \Function{randNeighbor}{s}
+        \State newsol $\gets$ copy(s)
+        \State i $\gets$ randomIndex()
+        \State j $\gets$ randomIndex()
+        \State newsol[i], newsol[j] $\gets$ newsol[j], newsol[i]
+        \If{rand() < probaMutation}
+            \State i $\gets$ randomIndexTo1()
+            \Comment{choose i with newsol[i] = 1}
+            \State newsol[i] = 0
+        \EndIf
+        \Return newsol
+    \EndFunction\\
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{How to update the temperature?}\\
+
+We chose a linear update from Ti to Te in nbiter iterations.\\
+
+\textbf{Which parameters to choose?}\\
+
+This is the hard part, after a bit of testing we arrived to parameters that allow the heuristic to approach the 2-approximation's performance, but sadly it is performing worse in general
+\begin{align*}
+    Ti &= 10
+    & Te &= 0.1\\
+    nbiter &= 5000
+    & ProbaMutation &= 0.75
+\end{align*}
+
+\textbf{Variant?}\\
+
+A variant of this algorithm is starting from an approximated solution instead of a random one, this way we are sure that the heuristic will do better than the approximation. We will try both in the \ref{Performance evaluation} section.
+\newpage
+\section{Exact Method}
+
+If finding an optimal solution is very important, and we are not doing it often enough, it could be a good idea to try the Branch and Bound method : searching through the tree of possible solutions while erasing the branches with no hope of being part of the optimal solution. It is much slower than the previous methods, especially because we have not found a good lower bound on the partial solutions, but we are certain to find the optimal solution.
+
+\begin{algorithm}
+\caption{BranchAndBound}
+\begin{algorithmic}
+    \Function{BranchAndBound}{G, T}
+    \State upperBound = \textsc{ApproximSteinerTree(G,T)}
+    \State stack.append(emptySolution)
+    \While{stack not empty}
+        \State s $\gets$ stack.pop()
+        \If{lowerBound(s) $\geq$ upperBound}
+             \textbf{continue}
+        \EndIf
+        \If{eval(s) < upperBound}
+            upperBound = eval(s)
+        \EndIf
+        \State u = choiceEdge(G)
+        \Comment{choose an edge we haven't used yet on this solution}
+        \State stack.append(s)
+        \State stack.append(s + u)
+    \EndWhile
+    \Return upperBound
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
+The performance of this algorithm depends heavily on the lowerBound, but as we will see in the \ref{Performance evaluation} section our lower bound is very bad. Therefore our algorithm is testing too many branches and is almost useless in a practical setting.
+\newpage
+\section{Performance evaluation} \label{Performance evaluation}
+\subsection{Lower Bound}
+To evaluate performance, we will first implement a lower bound of the solution, using the maximum of the exact solution of 3 of the terminals.
+\begin{algorithm}
+\caption{LowerBound}
+\begin{algorithmic}[1]
+    \Function{Exact3Term}{G=(V,E), S=(t1,t2,t3)}
+        \State \Return {min $\{$dist(G, t1, v) + dist(G, t2, v) + dist(G,t3, v) for v in V$\}$}
+    \EndFunction\\
+    \Function{LowerBound}{G, S}
+       \State \Return {max $\{\textsc{Exact3Term}$(G, (t1,t2,t3))   for (t1,t2,t3) in S$^3\}$}
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+This algorithm works because those are the only possible topologies of the exact solution with 3 terminals. This is always a combination of 3 smaller paths (one could be an empty path).
+
+\begin{center}
+\includegraphics[width=0.6\linewidth]{images/3topologie.png}
+\end{center}
+
+But it only takes into account 3 terminals, as we increase the number of terminals, this lower bound becomes much worse.
+\subsection{Tests on Steinlib instances}
+First we will test our algorithms on the instances from Steinlib (see \ref{steinlib}).
+Using the steinlib graphs from section B and C, we can see that our approximated solution, in practice, is very close to the optimal one. But we can also see that our lower bound is very bad when we increase the number of terminals.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/approx-B.png}
+    \caption{approximation on steinerlib instances - B}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/approx-C.png}
+    \caption{approximation on steinerlib instances - C}
+\end{figure}
+
+\begin{figure}
+\centering
+    \includegraphics[width=0.8\linewidth]{images/approx&heuristic'-B.png}
+    \caption{Heuristic with random initial, on steinerlib instances -B}
+\end{figure}
+
+\begin{figure}
+\centering
+    \includegraphics[width=0.75\linewidth]{images/approx&heuristic-B.png}
+    \caption{Heuristic with approximation initial on steinerlib instances -B}
+\end{figure}
+\newpage
+When using a random initial solution, the heuristic doesn't manage to do better than the approximation. This could be because we are not giving the algorithm enough time to find a solution, or the parameters are not ideal. Either way, starting from the approximation is a good idea to get a better final result. But the improvement is very small: If getting the best solution is not too critical, our heuristic might not be worth it.
+
+\subsection{Tests on random graphs}
+
+Now we will test our algorithms on random graphs with a variable number of terminals. This time we will test the heuristic only on 3000 steps for faster testing. We took 50 random graphs, with 25 nodes and edge weights between 1 and 10. And then ran our code with different percentages of terminals. The following graph shows the average results.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/50-random-graphs.png}
+    \caption{50 randoms graphs, Heuristic with random init}
+    \label{fig:enter-label}
+\end{figure}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/50-random-graph-2.png}
+    \caption{50 randoms graphs, Heuristic with approximation init}
+    \label{fig:enter-label}
+\end{figure}\\
+Again the heuristic is not significantly better than the approximation, even when starting from the approximation.
+\newpage
+\subsection{Exact method}
+
+We don't have graphs for our implementation of the branch and bound because it's extremely slow. To check on our best worst example, for epsilon = 0.5, it took more than 10 min to get the result
+\newpage
+\section{Conclusion}
+
+We recommend the company to use Heuristic algorithm with a 2-approximation as an inital solution. Since we can decide how many steps the Heuristic does, the time passed to search a solution will be reasonable. And we saw that in practice, on relatively small graphs, it performs decently well.
+To improve this work, we would need to find a good lower bound on the partial solution for the Branch and Bound.
+\newpage
+\section{Bibliographie}
+\begin{thebibliography}{9}
+
+\bibitem{Compendium1} \label{comp-steiner}
+Compendium for Steiner Tree \url{https://www.csc.kth.se/~viggo/wwwcompendium/node78.html}
+
+\bibitem{Compendium2} \label{comp-Cover}
+Compendium for Cover Set\url{https://www.csc.kth.se/~viggo/wwwcompendium/node147.html}
+
+\bibitem{Approx} \label{approx}
+Robins, G., and Zelikovsky, A. (2000), \textit{Improved steiner tree approximation in graphs},Proc. 10th Ann. ACM-SIAM Symp. on Discrete Algorithms, ACM-SIAM, 770-779.
+
+\bibitem{Steinlib} \label{steinlib}
+Steinlib\url{https://steinlib.zib.de/steinlib.php}
+
+\end{thebibliography}
+
+\end{document}
+
